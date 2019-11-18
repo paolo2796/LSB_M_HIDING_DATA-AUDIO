@@ -13,17 +13,17 @@ PATH_INPUT_FILE_AUDIO1_MODIFIED = PATH_PROJ + "/it/unisa/compressione/lsbm/origi
 
 # FUNCTIONS
 def most_significant_bit(frame):
-    var_bin = format(frame,'#034b')
+    var_bin = format(frame,'#018b')
     if(var_bin[0]=='-'):
-        var_bin = format(frame,'#35b')
+        var_bin = format(frame,'#19b')
     return var_bin[3:5] if var_bin[0]=='-' else var_bin[2:4]
 
 def bit_selection_extracted(sample):
 
     msb = most_significant_bit(sample)
-    sample_list = list(format(sample,'#034b'))
+    sample_list = list(format(sample,'#018b'))
     if(sample_list[0]=='-'):
-        sample_list = list(format(sample,'#035b'))
+        sample_list = list(format(sample,'#019b'))
     return sample_list[len(sample_list) - 3]
 
     if(msb == "00"):
@@ -39,14 +39,13 @@ audio_stego = AudioSegment.from_mp3(PATH_INPUT_FILE_AUDIO1_MODIFIED)
 extracted = list()
 # Extract the LSB of each byte
 samples = audio_stego.get_array_of_samples()
-print(samples[23000002])
 for i in range(0,len(samples)):
     extracted.append(bit_selection_extracted(samples[i]))
 
 # Convert byte array back to string
 string = "".join(chr(int("".join(map(str,extracted[i:i+8])),2)) for i in range(0,len(extracted),8))
 # Cut off at the filler characters
-decoded = string.split("#")[0]
+decoded = string.split("€")[0]
 
 # Print the extracted text
 print("Sucessfully decoded:")

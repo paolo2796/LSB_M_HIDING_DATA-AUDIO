@@ -6,12 +6,15 @@ import sys #Exit
 import array
 import numpy as np
 
-messaggio = input("Inserisci il messaggio da codificare (Sternocleidomastoideo): ") or "Sternocleidomastoideo"
+
+messaggio = "Hello"
 messaggio_bitarray = bitarray() # Inizializzo array di bit vuoto
 messaggio_bitarray.fromstring(messaggio) # Popolo array di bit con stringa in input
 
-# Init
-sample_da_nascondere = len(messaggio_bitarray) # grandezza sequenza
+messaggio_list = list()
+for char in messaggio:
+    messaggio_list.append(ord(char))
+
 
 # FUNCTIONS
 def most_significant_bit(frame):
@@ -41,36 +44,48 @@ def bit_selection_replaced(sample,bit_message):
     return int('-' + string[3:] if string[0]=='-' else string[2:], 2)
 
 
-file_path = input("Inserisci il nome del file MP3 (sample.mp3): ") or "sample.mp3"
-# Start processing della canzone
-fake_song = AudioSegment.empty();
-original_song = AudioSegment.from_mp3(file_path)
 
-caratteri_rimanenti = int((len(original_song.get_array_of_samples()) -  len(messaggio_bitarray))/8)
-messaggio = messaggio + (caratteri_rimanenti *'#')
-messaggio_bitarray = bitarray()
-messaggio_bitarray.fromstring((messaggio))
-samples = original_song.get_array_of_samples()
-#for i in range(0,len(samples)):
-        #samples[i] = bit_selection_replaced(samples[i],int(messaggio_bitarray[i]))
+filepath = "sample.mp3"
+from pydub import effects
+_sound = AudioSegment.from_mp3(filepath)
+
+def match_target_amplitude(sound, target_dBFS):
+    change_in_dBFS = target_dBFS - sound.dBFS
+    return sound.apply_gain(change_in_dBFS)
 
 
-print((original_song.get_array_of_samples()[23000000]))
-print((original_song.get_array_of_samples()[23000001]))
-print((original_song.get_array_of_samples()[23000002]))
 
-# Example operation on audio data
-#shifted_samples = np.left_shift(samples, 1)
+# 2 bytes == 16 bits
+sample_width = 2
 
-# now you have to convert back to an array.array
-#shifted_samples_array = array.array(original_song.array_type, shifted_samples)
+# 2 channels, aka stereo
+channels = 2
+
+# CD quality: 44.1kHz sample rate
+frame_rate = 44100
+
+# one frame of stereo, 16-bit silence (2 bytes per channel, left channel first)
+audio_data = b"\0\0\0\0\0\0\0\0"
+
+sound = AudioSegment(audio_data,
+                     sample_width=sample_width,
+                     frame_rate=frame_rate,
+                     channels=channels,
+                     )
 
 
-# Export original songsample_width=2, frame_rate=44100, channels=1
-original_song.export("original_modified.mp3",format="mp3", codec='mp3', bitrate="320k")
-new_sound = AudioSegment.from_mp3("original_modified.mp3")
-print(new_sound.get_array_of_samples()[23000000])
-print(new_sound.get_array_of_samples()[23000001])
-print(new_sound.get_array_of_samples()[23000002])
+_samples = sound.get_array_of_samples()
+_samples[1]=100
+_samples[2]=103
+
+from pydub import AudioSegment
+from pydub.utils import mediainfo
 
 
+original_bitrate = mediainfo(filepath)['bit_rate']
+sound = AudioSegment.from_mp3(filepath)
+print(sound.get_array_of_samples()[30000])
+
+sound.export("sample.mp3", format="mp3", bitrate=original_bitrate)
+sound = AudioSegment.from_mp3("audio_stego.mp3")
+print(sound.get_array_of_samples()[30000])

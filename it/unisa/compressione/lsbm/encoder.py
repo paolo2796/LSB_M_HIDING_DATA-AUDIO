@@ -1,75 +1,105 @@
 import sys
-# We will use wave package available in native Python installation to read and write .wav audio file
-import wave
-import array
-import numpy as np
-import struct
 from pydub import AudioSegment
+import base64
+import hashlib
+from Crypto.Cipher import AES
+from Crypto import Random
+
 
 
 # CONSTANTS DEF
 PATH_PROJ = sys.path[1]
 PATH_INPUT_FILE_AUDIO1 = PATH_PROJ + "/file_audio/audio1.wav"
-PATH_OUTPUT_FILE_AUDIO1 = PATH_PROJ + "/file_audio/encoded/audio1_lsbm.wav"
+PATH_OUTPUT_FILE_AUDIO1 = PATH_PROJ + "/file_audio/encoded/audio1_stego.wav"
+BLOCK_SIZE = 16
+pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
+unpad = lambda s: s[:-ord(s[len(s) - 1:])]
 
+
+def encrypt(raw, password):
+    private_key = hashlib.sha256(password.encode("utf-8")).digest()
+    raw = pad(raw)
+    iv = Random.new().read(AES.block_size)
+    cipher = AES.new(private_key, AES.MODE_CBC, iv)
+    return base64.b64encode(iv + cipher.encrypt(raw))
+
+
+def decrypt(enc, password):
+    private_key = hashlib.sha256(password.encode("utf-8")).digest()
+    enc = base64.b64decode(enc)
+    iv = enc[:16]
+    cipher = AES.new(private_key, AES.MODE_CBC, iv)
+    return unpad(cipher.decrypt(enc[16:]))
 
 
 # FUNCTIONS
 def most_significant_bit(frame):
-    var_bin = format(frame,'#010b')
-    return var_bin[2:4]
+    var_bin = format(frame,'#018b')
+    if(var_bin[0]=='-'):
+        var_bin = format(frame,'#19b')
+    return var_bin[3:5] if var_bin[0]=='-' else var_bin[2:4]
 
-def bit_selection_replaced(frame,bit_message):
-    msb = most_significant_bit(frame)
-    frame_list = list(format(frame,'#010b'))
+def bit_selection_replaced(sample,bit_message):
+    msb = most_significant_bit(sample)
+    sample_list = list(format(sample,'#018b'))
+    if(sample_list[0]=='-'):
+        sample_list = list(format(sample,'#019b'))
+
     if(msb == "00"):
-        frame_list[len(frame_list) - 3] = bit_message
+        sample_list[len(sample_list) - 3] = bit_message
     elif(msb  == "01"):
-        frame_list[len(frame_list) - 2] = bit_message
+        sample_list[len(sample_list) - 2] = bit_message
     elif(msb  == "10" or msb  == "11"):
-        frame_list[len(frame_list) - 1] = bit_message
+        sample_list[len(sample_list) - 1] = bit_message
+
     string = ""
-    for character in frame_list:
+    for character in sample_list:
         string = string + str(character)
 
-    return int(string[2:], 2)
+    return int('-' + string[3:] if string[0]=='-' else string[2:], 2)
 
 
 
-# read wave audio file
-song = wave.open(PATH_INPUT_FILE_AUDIO1, mode='rb')
-# Read frames and convert to byte array
-frame_bytes = bytearray(list(song.readframes(song.getnframes())))
+#read wave audio file
+song = AudioSegment.from_wav(PATH_INPUT_FILE_AUDIO1)
+#samples of audio wav
+samples = song.get_array_of_samples()
+# secret message
+string = "testo segreto"
+#chiave simmetrica per cifrare il testo (AES-256)
+password = input("Inserisci password per la cifratura del testo: ")
+# First let us encrypt secret message
+encrypted = encrypt(string, password)
+string_enc = bytes.decode(encrypted)
 
-# The "secret" text message
-string="MESSAGGIO NASCOSTO DA PAOLETTO"
 # Numero minimo di campioni richiesti per l'iniezione del messaggio segreto
-num_min_samples = len(string)*8*8
+num_min_samples = len(string_enc)*8
 # Calcolo campioni rimanenti per aggiungere bit di padding al messaggio segreto
-dif_samples_padding = len(frame_bytes) - num_min_samples
+dif_samples_padding = len(samples) - num_min_samples
 # Divido per 8 in modo tale da calcolare il numero di caratteri di padding da aggiungere al messaggio segreto
 num_char_padding = int(dif_samples_padding/8)
-
-
-# Append dummy data to fill out rest of the bytes. Receiver shall detect and remove these characters.
-string = string + num_char_padding *'#'
+# testo segreto con padding
+string_enc = string_enc + (num_char_padding *'#')
 # Convert text to bit array
-bits = list(map(int, ''.join([bin(ord(i)).lstrip('0b').rjust(8,'0') for i in string])))
+bits = list(map(int, ''.join([bin(ord(i)).lstrip('0b').rjust(8,'0') for i in string_enc])))
 # Replace LSB of each byte of the audio data by one bit from the text bit array
-for i, bit in enumerate(bits):
-        frame_bytes[i] = bit_selection_replaced(frame_bytes[i],bit)
 
+for i, bit in enumerate(bits):
+    try:
+        samples[i] = bit_selection_replaced(samples[i],bit)
+    except:
+        # hack avoid underflow and overflow
+        if(samples[i]>0):
+            samples[i] = samples[i] - 1
+        else:
+            samples[i] = samples[i] + 1
+
+
+        samples[i] = bit_selection_replaced(samples[i],bit)
 
 # Get the modified bytes
-frame_modified = bytes(frame_bytes)
-
-# Write bytes to a new wave audio file
-with wave.open(PATH_OUTPUT_FILE_AUDIO1, 'wb') as fd:
-    fd.setparams(song.getparams())
-    fd.writeframes(frame_modified)
-
-song.close()
-
+stego_song = song._spawn(samples)
+stego_song.export(PATH_OUTPUT_FILE_AUDIO1,format="wav")
 
 
 

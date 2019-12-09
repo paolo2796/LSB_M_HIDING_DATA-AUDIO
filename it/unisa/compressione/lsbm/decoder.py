@@ -29,7 +29,7 @@ def decrypt(enc, password):
 
 # CONSTANTS
 PATH_PROJ = sys.path[1]
-PATH_INPUT_FILE_AUDIO1_MODIFIED = PATH_PROJ + "/file_audio/encoded/audio1_stego.wav"
+PATH_INPUT_FILE_AUDIO1_MODIFIED = "./file_audio/encoded/audio1_stego.wav"
 
 # FUNCTIONS
 def most_significant_bit(frame):
@@ -59,7 +59,7 @@ stego_song = AudioSegment.from_wav(PATH_INPUT_FILE_AUDIO1_MODIFIED)
 samples = stego_song.get_array_of_samples()
 
 extracted = list()
-# Extract the LSB of each byte
+# Estrazione testo segreto
 for sample in samples:
     extracted.append(bit_selection_extracted(sample))
 

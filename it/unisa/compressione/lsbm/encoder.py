@@ -9,8 +9,8 @@ from Crypto import Random
 
 # CONSTANTS DEF
 PATH_PROJ = sys.path[1]
-PATH_INPUT_FILE_AUDIO1 = PATH_PROJ + "/file_audio/audio1.wav"
-PATH_OUTPUT_FILE_AUDIO1 = PATH_PROJ + "/file_audio/encoded/audio1_stego.wav"
+PATH_INPUT_FILE_AUDIO1 = "./file_audio/audio1.wav"
+PATH_OUTPUT_FILE_AUDIO1 = "./file_audio/encoded/audio1_stego.wav"
 BLOCK_SIZE = 16
 pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
 unpad = lambda s: s[:-ord(s[len(s) - 1:])]
@@ -65,7 +65,7 @@ song = AudioSegment.from_wav(PATH_INPUT_FILE_AUDIO1)
 #samples of audio wav
 samples = song.get_array_of_samples()
 # secret message
-string = "testo segreto"
+string = input("inserisci testo segreto: ")
 #chiave simmetrica per cifrare il testo (AES-256)
 password = input("Inserisci password per la cifratura del testo: ")
 # First let us encrypt secret message
@@ -82,8 +82,8 @@ num_char_padding = int(dif_samples_padding/8)
 string_enc = string_enc + (num_char_padding *'#')
 # Convert text to bit array
 bits = list(map(int, ''.join([bin(ord(i)).lstrip('0b').rjust(8,'0') for i in string_enc])))
-# Replace LSB of each byte of the audio data by one bit from the text bit array
 
+# Applica tecnica lsbm
 for i, bit in enumerate(bits):
     try:
         samples[i] = bit_selection_replaced(samples[i],bit)
@@ -93,7 +93,6 @@ for i, bit in enumerate(bits):
             samples[i] = samples[i] - 1
         else:
             samples[i] = samples[i] + 1
-
 
         samples[i] = bit_selection_replaced(samples[i],bit)
 

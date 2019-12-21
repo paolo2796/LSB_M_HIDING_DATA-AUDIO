@@ -34,9 +34,11 @@ def decrypt(enc, password):
 
 # FUNCTIONS
 def most_significant_bit(frame):
-    var_bin = format(frame,'#018b')
-    if(var_bin[0]=='-'):
-        var_bin = format(frame,'#19b')
+    var_bin = format(frame,'#0b')
+    if(var_bin[0]=='-' and len(var_bin)<7):
+        var_bin = format(frame,'#019b')
+    elif(var_bin[0]=='0' and len(var_bin)<6):
+        var_bin = format(frame,'#018b')
     return var_bin[3:5] if var_bin[0]=='-' else var_bin[2:4]
 
 def bit_selection_replaced(sample,bit_message):
@@ -74,6 +76,7 @@ string_enc = bytes.decode(encrypted)
 
 # Numero minimo di campioni richiesti per l'iniezione del messaggio segreto
 num_min_samples = len(string_enc)*8
+
 # Calcolo campioni rimanenti per aggiungere bit di padding al messaggio segreto
 dif_samples_padding = len(samples) - num_min_samples
 # Divido per 8 in modo tale da calcolare il numero di caratteri di padding da aggiungere al messaggio segreto
@@ -99,6 +102,7 @@ for i, bit in enumerate(bits):
 # Get the modified bytes
 stego_song = song._spawn(samples)
 stego_song.export(PATH_OUTPUT_FILE_AUDIO1,format="wav")
+print("File stego salvato!")
 
 
 

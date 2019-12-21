@@ -33,9 +33,11 @@ PATH_INPUT_FILE_AUDIO1_MODIFIED = "./file_audio/encoded/audio1_stego.wav"
 
 # FUNCTIONS
 def most_significant_bit(frame):
-    var_bin = format(frame,'#018b')
-    if(var_bin[0]=='-'):
+    var_bin = format(frame,'#0b')
+    if(var_bin[0]=='-' and len(var_bin)<7):
         var_bin = format(frame,'#019b')
+    elif(var_bin[0]=='0' and len(var_bin)<6):
+        var_bin = format(frame,'#018b')
     return var_bin[3:5] if var_bin[0]=='-' else var_bin[2:4]
 
 def bit_selection_extracted(sample):
@@ -49,6 +51,8 @@ def bit_selection_extracted(sample):
         return sample_list[len(sample_list) - 2]
     elif(msb  == "10" or msb  == "11"):
         return sample_list[len(sample_list) - 1]
+
+
 
 password = input("Inserisci password per decifrare il testo: ")
 

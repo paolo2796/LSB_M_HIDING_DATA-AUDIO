@@ -6,8 +6,7 @@ from Crypto.Cipher import AES
 from Crypto import Random
 
 
-
-# CONSTANTS DEF
+# CONSTANTS
 PATH_PROJ = sys.path[1]
 PATH_INPUT_FILE_AUDIO1 = "./file_audio/audio1.wav"
 PATH_OUTPUT_FILE_AUDIO1 = "./file_audio/encoded/audio1_stego.wav"
@@ -32,7 +31,7 @@ def decrypt(enc, password):
     return unpad(cipher.decrypt(enc[16:]))
 
 
-# FUNCTIONS
+# restituisce i due bit più significativi del campione
 def most_significant_bit(frame):
     var_bin = format(frame,'#0b')
     if(var_bin[0]=='-' and len(var_bin)<7):
@@ -41,6 +40,7 @@ def most_significant_bit(frame):
         var_bin = format(frame,'#018b')
     return var_bin[3:5] if var_bin[0]=='-' else var_bin[2:4]
 
+# sostituisco uno dei tre bit meno significativi del campione a seconda del valore dei due bit più significativi
 def bit_selection_replaced(sample,bit_message):
     msb = most_significant_bit(sample)
     sample_list = list(format(sample,'#018b'))
@@ -70,7 +70,7 @@ samples = song.get_array_of_samples()
 string = input("inserisci testo segreto: ")
 #chiave simmetrica per cifrare il testo (AES-256)
 password = input("Inserisci password per la cifratura del testo: ")
-# First let us encrypt secret message
+# Eseguo cifratura del testo segreto
 encrypted = encrypt(string, password)
 string_enc = bytes.decode(encrypted)
 
@@ -86,7 +86,7 @@ string_enc = string_enc + (num_char_padding *'#')
 # Convert text to bit array
 bits = list(map(int, ''.join([bin(ord(i)).lstrip('0b').rjust(8,'0') for i in string_enc])))
 
-# Applica tecnica lsbm
+# Applico tecnica lsbm
 for i, bit in enumerate(bits):
     try:
         samples[i] = bit_selection_replaced(samples[i],bit)

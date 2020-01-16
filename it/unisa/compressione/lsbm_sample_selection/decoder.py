@@ -95,7 +95,7 @@ samples_exploitable_arr =  sample_exploitable()
 i=0
 while i < len(samples_exploitable_arr):
     extracted.append(bit_selection_extracted(samples[samples_exploitable_arr[i]]))
-    i=i+1
+    i+=1
 
 
 # Convert byte array back to string

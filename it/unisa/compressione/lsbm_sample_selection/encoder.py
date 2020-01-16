@@ -33,7 +33,7 @@ def decrypt(enc, password):
     return unpad(cipher.decrypt(enc[16:]))
 
 
-# FUNCTIONS
+# restituisce i primi tre bit più significativi del campione
 def most_significant_bit_three(frame):
     var_bin = format(frame,'#0b')
     if(var_bin[0]=='-' and len(var_bin)<7):
@@ -43,6 +43,7 @@ def most_significant_bit_three(frame):
     return var_bin[3:6] if var_bin[0]=='-' else var_bin[2:5]
 
 
+# ritorna una lista contenente gli indici relativi ai campioni sfruttabili per l'iniezione del testo segreto
 def sample_exploitable():
     count=[]
     i=0
@@ -69,6 +70,7 @@ def sample_exploitable():
                 count.append(i)
     return count
 
+# sostituisce l'ultimo bit meno significativo del campione dato in input
 def bit_sample_selection_replaced(sample,bit_message):
     msb = most_significant_bit_three(sample)
     sample_list = list(format(sample,'#018b'))
@@ -114,7 +116,7 @@ string_enc = string_enc + (num_char_padding *'#')
 bits = list(map(int, ''.join([bin(ord(i)).lstrip('0b').rjust(8,'0') for i in string_enc])))
 
 
-# Applico tecnica lsbm
+# Applico tecnica lsbm sample selection
 for i, bit in enumerate(bits):
     try:
         samples[samples_exploitable_arr[i]]  = bit_sample_selection_replaced(samples[samples_exploitable_arr[i]],bit)
